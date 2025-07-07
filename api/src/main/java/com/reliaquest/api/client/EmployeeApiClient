@@ -1,0 +1,106 @@
+package com.reliaquest.api.client;
+
+import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Service;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestTemplate;
+
+@Log4j2
+@Service
+public class EmployeeApiClient {
+    @Value("${api.employeeService.url}")
+    private String urlApiEmployee;
+
+    private final RestTemplate restTemplate;
+    private HttpHeaders headers = new HttpHeaders();
+
+    @Autowired
+    public EmployeeApiClient(final @Qualifier("restTemplate") RestTemplate restTemplate){
+        this.restTemplate = restTemplate;
+    }
+
+    ResponseEntity<?> getEmployee(String id) {
+        //If id is passed, we fetch the individual. If not, we fallback and use the get all employees since the 
+        //difference in path is just addition of "/id"
+        ResponseEntity<?> result;
+        final long time = System.currentTimeMillis();
+        try {
+            if(id==null || id.isEmpty())
+                result = restTemplate.getForEntity(urlApiEmployee, Employee.class);
+            else
+                result = restTemplate.getForEntity((urlApiEmployee+"/"+id), Employee.class);    
+            log.debug("Api response:"+result.getBody());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        finally {
+            log.debug("TotalTimeTaken="+(System.currentTimeMillis()-time)+". TransactionId="+id);
+        }
+        return result;
+    }
+
+    ResponseEntity<?> getEmployeeByName(String name) {
+        ResponseEntity<?> result;
+        final long time = System.currentTimeMillis();
+        try {
+            result = restTemplate.getForEntity((urlApiEmployee+"/"+name), Employee.class);    
+            log.debug("Api response:"+result.getBody());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        finally {
+            log.debug("TotalTimeTaken="+(System.currentTimeMillis()-time)+". TransactionId="+name);
+        }
+        return result;
+    }
+
+    ResponseEntity<?> createEmployee(final Input employee) {
+        final long time = System.currentTimeMillis();
+        ResponseEntity<?> result;
+        headers.set("Content-Type","application/json");
+        try {
+            result = restTemplate.postForEntity(urlApiEmployee, new HttpEntity<>(employee.toString(), headers), Employee.class);
+            log.debug("Api response:"+result.getBody());
+        } catch (Exception e) {
+            if(e.getMessage().contains("400")) {
+                final String msg = "Invalid Request. Employee=" + employee.getName() + ". " + e.getMessage();
+                log.error(msg);
+            }
+            else {
+                final String msg = "Unexpected Error. Employee=" + employee.getName() + ". " + e.getMessage();
+                log.error(msg);
+            }
+        } finally {
+            log.info("TotalTimeTaken="+(System.currentTimeMillis()-time)+". Employee="+employee.getName());
+        }
+        return result;
+    }
+
+    ResponseEntity<?> deleteEmployee(String name) {
+        final long time = System.currentTimeMillis();
+        ResponseEntity<?> result;
+        headers.set("Content-Type","application/json");
+        try {
+            result = restTemplate.deleteForEntity(urlApiEmployee, new HttpEntity<>(name, headers), Boolean.class);
+            log.debug("Api response:"+result.getBody());
+        } catch (Exception e) {
+            if(e.getMessage().contains("400")) {
+                final String msg = "Invalid Request. Employee=" + name + ". " + e.getMessage();
+                log.error(msg);
+            }
+            else {
+                final String msg = "Unexpected Error. Employee=" + name + ". " + e.getMessage();
+                log.error(msg);
+            }
+        } finally {
+            log.info("TotalTimeTaken="+(System.currentTimeMillis()-time)+". Employee="+name);
+        }
+        return result;
+    }
+}
+
