@@ -12,7 +12,6 @@ import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuil
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.core5.http.io.SocketConfig;
 import org.apache.hc.core5.util.Timeout;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -23,9 +22,10 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 import java.nio.charset.StandardCharsets;
 
+@Configuration
 public class ClientConfig {
     @Primary
-    @Bean(name = "avalaraRestTemplate")
+    @Bean(name = "restTemplate")
     public RestTemplate restTemplate() {
         return new RestTemplate(getReqFactory());
     }
