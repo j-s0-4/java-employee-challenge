@@ -1,14 +1,19 @@
 package com.reliaquest.api.client;
 
 import lombok.extern.log4j.Log4j2;
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import com.reliaquest.api.model.Employee;
+import com.reliaquest.api.model.EmployeeRequest;
 
 @Log4j2
 @Service
@@ -17,23 +22,38 @@ public class EmployeeApiClient {
     private String urlApiEmployee;
 
     private final RestTemplate restTemplate;
-    private HttpHeaders headers = new HttpHeaders();
+    private final HttpHeaders headers = new HttpHeaders();
 
     @Autowired
     public EmployeeApiClient(final @Qualifier("restTemplate") RestTemplate restTemplate){
         this.restTemplate = restTemplate;
+        this.headers.set("Content-Type","application/json");
     }
 
-    ResponseEntity<?> getEmployee(String id) {
-        //If id is passed, we fetch the individual. If not, we fallback and use the get all employees since the 
-        //difference in path is just addition of "/id"
-        ResponseEntity<?> result;
+    public ResponseEntity<List<Employee>> getEmployees() {
+        ResponseEntity<List<Employee>> result = null;
+        final long time = System.currentTimeMillis();
+        try {  
+            result = restTemplate.exchange(
+                urlApiEmployee, 
+                HttpMethod.GET, 
+                null, 
+                new ParameterizedTypeReference<List<Employee>>() {});
+            log.debug("Api response:"+result.getBody());
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+        finally {
+            log.debug("TotalTimeTaken="+(System.currentTimeMillis()-time));
+        }
+        return result;
+    }
+
+    public ResponseEntity<Employee> getEmployeeById(String id) {
+        ResponseEntity<Employee> result = null;
         final long time = System.currentTimeMillis();
         try {
-            if(id==null || id.isEmpty())
-                result = restTemplate.getForEntity(urlApiEmployee, Employee.class);
-            else
-                result = restTemplate.getForEntity((urlApiEmployee+"/"+id), Employee.class);    
+            result = restTemplate.getForEntity((urlApiEmployee+"/"+id), Employee.class);    
             log.debug("Api response:"+result.getBody());
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -44,11 +64,15 @@ public class EmployeeApiClient {
         return result;
     }
 
-    ResponseEntity<?> getEmployeeByName(String name) {
-        ResponseEntity<?> result;
+    public ResponseEntity<List<Employee>> getEmployeeByName(String name) {
+        ResponseEntity<List<Employee>> result = null;
         final long time = System.currentTimeMillis();
         try {
-            result = restTemplate.getForEntity((urlApiEmployee+"/"+name), Employee.class);    
+            result = restTemplate.exchange(
+                urlApiEmployee+"/"+name, 
+                HttpMethod.GET, 
+                null, 
+                new ParameterizedTypeReference<List<Employee>>() {});
             log.debug("Api response:"+result.getBody());
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -59,10 +83,9 @@ public class EmployeeApiClient {
         return result;
     }
 
-    ResponseEntity<?> createEmployee(final Input employee) {
+    public ResponseEntity<Employee> createEmployee(final EmployeeRequest employee) {
         final long time = System.currentTimeMillis();
-        ResponseEntity<?> result;
-        headers.set("Content-Type","application/json");
+        ResponseEntity<Employee> result = null;
         try {
             result = restTemplate.postForEntity(urlApiEmployee, new HttpEntity<>(employee.toString(), headers), Employee.class);
             log.debug("Api response:"+result.getBody());
@@ -81,12 +104,11 @@ public class EmployeeApiClient {
         return result;
     }
 
-    ResponseEntity<?> deleteEmployee(String name) {
+    public ResponseEntity<String> deleteEmployee(String name) {
         final long time = System.currentTimeMillis();
-        ResponseEntity<?> result;
-        headers.set("Content-Type","application/json");
+        ResponseEntity<String> result = null;
         try {
-            result = restTemplate.deleteForEntity(urlApiEmployee, new HttpEntity<>(name, headers), Boolean.class);
+            result = restTemplate.exchange(urlApiEmployee, HttpMethod.DELETE, new HttpEntity<>(name, headers), String.class);
             log.debug("Api response:"+result.getBody());
         } catch (Exception e) {
             if(e.getMessage().contains("400")) {

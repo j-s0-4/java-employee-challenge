@@ -5,9 +5,7 @@ import java.util.List;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Service;
 import com.reliaquest.api.model.Employee;
 import com.reliaquest.api.model.EmployeeRequest;
 import com.reliaquest.api.client.EmployeeApiClient;
@@ -21,19 +19,18 @@ public class EmployeeService {
       this.employeeApiClient = employeeApiClient;
   }
 
-
   public List<Employee> getAllEmployees(){
     List<Employee> listEmployee = new ArrayList<>();
-    ResponseEntity<List<Employee>> response = employeeApiClient.getAllEmployees(null);
-    listEmployee = (List<Employee>) response.getBody(); //cast
+    ResponseEntity<List<Employee>> response = employeeApiClient.getEmployees();
+    listEmployee = (List<Employee>) response.getBody();
     LOG.info("Employee List fetched: "+listEmployee);
     return listEmployee;
   }
 
   public Employee getEmployeeById(String id){
-    ResponseEntity<Employee> response = employeeApiClient.getAllEmployees(id); //pass id
+    ResponseEntity<Employee> response = employeeApiClient.getEmployeeById(id); //pass id
     Employee employee = (Employee) response.getBody();
-    LOG.info("Employee fetched: "+employee.getId());
+    LOG.info("Employee fetched: " + (employee!=null ? employee.getId():"null"));
     return employee;
   }
 
@@ -58,13 +55,5 @@ public class EmployeeService {
     LOG.info("Employee deleted: "+id);
     return success;
   }
-
-  // public List<String> getTopTenHighestEarningEmployeeNames(){
-
-  // }
-
-  // public Integer getHighestEarningEmployees(){
-
-  // }
 
 }
